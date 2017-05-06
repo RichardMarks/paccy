@@ -16,6 +16,86 @@ const TILES_BY_CHIP = {
 
 const chipToTileId = (chip) => TILES_BY_CHIP[chip]
 
+const ticker = window.TickerSystem = {
+  created: {},
+  started: {},
+  stopped: {},
+  create (name, { rate = 1000, onTick, onStart, onStop } = {}) {
+    const tickerObj = {
+      name,
+      time: 0,
+      started: false,
+      rate,
+      onTick,
+      onStart,
+      onStop,
+
+      start (restart = false) {
+        ticker.started[name] = tickerObj
+        delete ticker.stopped[name]
+
+        if (tickerObj.started && restart) {
+          window.clearInterval(tickerObj.interval)
+          tickerObj.time = 0
+        }
+
+        tickerObj.interval = window.setInterval(tickerObj.tick.bind(tickerObj), rate)
+        tickerObj.started = true
+        tickerObj.onStart && tickerObj.onStart()
+      },
+
+      stop () {
+        if (tickerObj.started) {
+          ticker.stopped[name] = tickerObj
+          delete ticker.started[name]
+          window.clearInterval(tickerObj.interval)
+          delete tickerObj.interval
+          tickerObj.started = false
+          tickerObj.onStop && tickerObj.onStop()
+        }
+      },
+
+      tick (artificialTicks = 1) {
+        tickerObj.time += artificialTicks
+        tickerObj.onTick && tickerObj.onTick(
+          {
+            time: tickerObj.time
+          }
+        )
+      }
+    }
+
+    ticker.created[name] = tickerObj
+
+    return tickerObj
+  },
+
+  destroy (name) {
+    const killTicker = () => {
+      ticker.created[name].stop()
+      delete ticker.stopped[name]
+      delete ticker.created[name]
+    }
+
+    ticker.created[name] && killTicker()
+  },
+
+  stop (name, tickImmediately = true) {
+    ticker.started[name] && tickImmediately && ticker.started[name].tick()
+    ticker.started[name] && ticker.started[name].stop()
+  },
+
+  start (name, tickImmediately = true) {
+    ticker.created[name] && ticker.created[name].start()
+    ticker.created[name] && tickImmediately && ticker.created[name].tick()
+  },
+
+  restart (name, tickImmediately = true) {
+    ticker.started[name] && ticker.started[name].start(true)
+    ticker.started[name] && tickImmediately && ticker.started[name].tick()
+  }
+}
+
 const game = {
   level: [
     'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
@@ -43,7 +123,7 @@ const game = {
     'x             P               x',
     'x                             x',
     'x                             x',
-    'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
   ],
   width: 0,
   height: 0,
