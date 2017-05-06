@@ -10,6 +10,7 @@ Created by Richard Marks <ccpsceo@gmail.com>
 ## Installation
 
 `git clone https://github.com/RichardMarks/paccy.git`
+
 `npm i`
 
 ## Running Dev Server
